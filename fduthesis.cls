@@ -52,7 +52,7 @@
 \RequirePackage { xparse, xtemplate, l3keys2e }
 \clist_map_inline:nn { expl3, xparse, xtemplate, l3keys2e }
   {
-    \@ifpackagelater {#1} { 2018/05/12 }
+    \@ifpackagelater {#1} { 2010/05/12 }
       { } { \msg_error:nnn { fduthesis } { l3-too-old } {#1} }
   }
 \msg_new:nnn { fduthesis } { l3-too-old }
