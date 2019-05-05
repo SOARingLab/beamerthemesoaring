@@ -1,13 +1,16 @@
-# Fudan Beamer Theme
+# Beamer Theme for Soaringlab
 
 _(Status: alpha)_
 
-An unofficial beamer theme for Fudan University.
+An unofficial beamer theme for Soaringlab.
 
-Usage: Copy `logo-background.pdf`, `logo-titlepage.pdf` and `beamerthemefudan.sty` to your project directory, then write
-```
-\usetheme{fudan}
-```
-in your beamer document.
+```latex
+%%% use theme https://hartwork.org/beamer-theme-matrix/
+% \usetheme{Warsaw} % 蓝黑
+% \usetheme{Ilmenau} % 蓝色
+% \usetheme{Madrid} % 蓝紫色
+\usetheme{CambridgeUS} % 红色
 
-![](images/example.png)
+% 自定义设定放在最后
+\usetheme{soaring}
+```
