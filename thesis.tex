@@ -1,28 +1,243 @@
-\documentclass{beamer}
-\usetheme{fudan}
+\documentclass[compress]{beamer}
+% use theme https://hartwork.org/beamer-theme-matrix/
+% \usetheme{Warsaw} % 蓝色
+\usetheme{Ilmenau} % 蓝色
+% \usetheme{Madrid} % 蓝色
+% \usetheme{CambridgeUS} % 红色
 
-\title{A Priority-Based Policy for \\Autonomous Intersection Control}
+% 自定义的设定放在最后
+\usetheme{soaring}
+
+% use package
+\usepackage{tikz}
+\usepackage{diagbox}
+\usepackage[ruled]{algorithm2e}
+\usepackage{cite}
+\usepackage{float}
+
+% title page
+\title[Priority-based Policy]{A Priority-Based Policy for \\Autonomous Intersection Control}
 \author{Chenglong HU}
-\institute{School of Computer Science, Fudan University, Shanghai, China\\
-Shanghai Key Laboratory of Data Science, Shanghai, China\\
-Shanghai Institute of Intelligent Electronics \& Systems
+\institute[Fudan University]{
+    School of Computer Science \\
+    Fudan University, Shanghai \\
+    200433, China
 }
-\date{May 2019}
 
+% document
 \begin{document}
-  
+
   \begin{frame}
-    \maketitle
+  \titlepage
   \end{frame}
   
-  \begin{frame}
-    \tableofcontents
+\section{Introduction}
+  \begin{frame}{Introduction}
+    \begin{itemize}
+        \item Future of autonomous driving is about teaching cars driving in the traffic.
+        \item Modern traffic protocol is designed specific for human.
+        \item It’s not best optimal for the Autonomous Driving Cars. Like traffic light protocol and stop sign
+        \item Intelligent Transportation System (ITS): the integration of transportation system with vehicle-to-vehicle (V2V) and vehicle-to-infrastructure (V2X).
+        \item Regard the intersection as the limited space-time resources and let vehicles get a reservation from intersection.
+    \end{itemize}
+  \end{frame}
+  
+\section{Related Work}
+  \begin{frame}{Related Work}
+    The previous related work treats every vehicle as equal. [1-3]
+It’s important to distinguish on vehicle’s priority.
+Vehicle priority
+Lane priority
+
+  \end{frame}
+  
+\section{Background}
+  \begin{frame}{Background}
+    Reservation-based System
+    Policy to decide the order to process vehicles’ messages
+    Default one: First Come First Serve
+    It’s brute force and it works!
+    Fallbacks:
+    never consider the priority of vehicles or lanes.
+    treat the front car same as the back car.
+    just retry when messages missing in the communication.
+    the arrival time of messages really matters.
   \end{frame}
 
-
-  \begin{frame}{Sample Equation}
-    Sample equation
-    $$ Ax = b. $$
+\section{Our Work}
+  \begin{frame}{Motivation}
+    
   \end{frame}
 
+  \begin{frame}{Definition}
+    
+  \end{frame}
+  
+  \begin{frame}{Find highest priority request}
+    \begin{algorithm}[H]
+    \caption{Find highest priority request}
+    \label{alg:A}
+    \tiny
+    \KwIn{~~ \\
+    The hashmap to find vehicles in a lane, $l2v$;\\
+    The hashmap from vehicle to its request, $v2m$;
+    }
+    \KwOut{ ~~ \\
+    Highest priority request, $request$;
+    }
+    $nearest~vins$ $\gets$ $empty$ \\
+    \ForEach{$lane$ in the keyset of $l2v$}{
+        $v$ $\gets$ null \\
+        \ForEach{$vin$ in $l2v[lane]$}{
+            $v$ $\gets$ nearest $vin$ in this $lane$
+        }
+        $nearest~vins$ $\gets$ $nearest~vins$ $\cup$ $v$
+    }
+    \If{$nearest~vins$ is empty}{
+       return null
+    }
+    
+    \ForEach{$vin$ in $nearest~vins$}{
+        $request$ $\gets$ highest priority request
+    }
+    \ForEach{$vin$ in $nearest~vins$}{
+        \If{$request$ is not $v2m[vin]$}{
+            set $v2m[vin]$'s priority as twice
+        }
+    }
+    \end{algorithm}
+  \end{frame}
+
+  \begin{frame}{Our work: Algorithm Details 1}
+    \begin{algorithm}[H]
+    \caption{\scriptsize{Priority based policy}}
+    \label{alg:B}
+    \tiny
+    
+    \KwIn{\\
+    The hashmap to find vehicles in a lane, $l2v$;\\
+    The hashmap from vehicle to its request, $v2m$;\\
+    The message queue for cancel and done, $instant\_mq$;
+    }
+    \textbf{Thread 1: message producer see Algorithm \ref{alg:thread1}}\\
+    \textbf{Thread 2: message consumer see Algorithm \ref{alg:thread2}}\\
+    \textbf{Thread 3: message consumer see Algorithm \ref{alg:thread3}}\\
+    \end{algorithm}
+  \end{frame}
+
+  \begin{frame}{Our work: Algorithm Details 2}
+    \begin{algorithm}[H]
+        \caption{producer to push message into queue}
+        \label{alg:thread1}
+        \While{$message$ $\gets$ receive message from vehicle}{
+            \If{$message$ type is CANCEL or DONE}{
+                put $message$ $\to$ $instant\_mq$ 
+            }
+            \If{$message$ type is REQUEST}{
+                $vin$ $\gets$ vehicle id from $message$ \\
+                \eIf{$vin~\in~v2m$}{
+                    set $message$'s priority\_level as twice\\
+                    refresh $message$ $\to$ $v2m[vin]$
+                }{
+                    put $message$ $\to$ $v2m[vin]$
+                }
+            }
+        }
+    \end{algorithm}
+  \end{frame}
+
+  \begin{frame}{Our work: Algorithm Details 3}
+    \begin{algorithm}[H]
+    \caption{consumer for CANCEL and DONE message}
+    \label{alg:thread2}
+    \While{True}{
+        $message$ $\gets$ pop from $instant\_mq$\\
+        \If{$message$ type is CANCEL}{
+            process cancel \\
+            $vin$ $\gets$ vehicle id from $message$ \\
+            send ACKNOWLEDGE $\to$ vehicle $vin$ \\
+            set $priority\_level$ in $v2m[vin]$ $\gets$ -1
+        }
+        \If{$message$ type is DONE}{
+            process done \\
+            send ACKNOWLEDGE $\to$ vehicle \\
+            $vin$ $\gets$ vehicle id from $message$ \\
+            remove $v2m[vin]$
+        }
+    }
+    \end{algorithm}
+  \end{frame}
+
+  \begin{frame}{Our work: Algorithm Details 4}
+    \begin{algorithm}[H]
+    \caption{consumer for REQUEST message}
+    \label{alg:thread3}
+    \scriptsize
+    
+    \While{True}{
+        $request$ $\gets$ $v2m$'s highest priority request(Algorithm\ref{alg:A})\\
+        $vin$ $\gets$ vehicle id from $request$ \\
+        $t_c$ $\gets$ current time \\
+        $t_a$ $\gets$ proposed arrival time from $request$ \\
+        \If{$t_a~<~t_c$}{
+            send REJECT to vehicle $vin$ \\
+            return
+        }
+        \If{$request$ type is REQUEST}{
+            $status~\gets$ process $request$ for new reservation\\
+            \eIf{$status$ is success}{
+                send CONFIRM to vehicle $vin$ with reservation \\
+                set $priority\_level$ in $v2m[vin]$ $\gets$ -1
+            }{
+                send REJECT to vehicle $vin$ \\
+                set $priority\_level$ in $v2m[vin]$ as double
+            }
+        }
+    }
+    \end{algorithm}
+  \end{frame}
+
+  \begin{frame}{Our work: Demo}
+    
+  \end{frame}
+  
+  \begin{frame}{Our work: Experiments}
+    \begin{table}[tb]
+    \caption{average passing using for different policy}
+    \centering
+    \label{Table:A}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \diagbox{Sim Time(s)}{Passing Time(s)}{Policy} & FCFS Policy & Priority-based Policy \\
+        \hline
+        50 & 10.24 & 9.96 \\
+        \hline
+        100 & 14.98 & 13.56 \\
+        \hline
+        150 & 18.83 & 15.46 \\
+        \hline
+        200 & 19.34 & 15.38 \\
+        \hline
+        250 & 21.23 & 17.86 \\
+        \hline
+        300 & 22.65 & 20.05 \\
+        \hline
+    \end{tabular}
+    \end{table}
+  \end{frame}
+
+  \begin{frame}{Our work: Analysis}
+    
+  \end{frame}
+  
+\section{Conclusion}
+  \begin{frame}{Conclusion and Future work}
+    Future work
+  \end{frame}
+
+\section{Q\&A}  
+  \begin{frame}{}
+    Thanks Q\&A
+  \end{frame}
+  
 \end{document}
